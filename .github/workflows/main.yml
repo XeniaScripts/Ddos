@@ -1,0 +1,28 @@
+name: Sparx Cloud Nitro
+on: 
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target Website URL'
+        required: true
+        default: 'http://example.com'
+
+jobs:
+  nitro-attack:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # This creates 20 parallel virtual machines
+        worker: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Libs
+        run: pip install aiohttp rich
+      - name: Run Sparx
+        env:
+          TARGET_URL: ${{ github.event.inputs.target }}
+        run: python sparx.py
